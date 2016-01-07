@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/thrift/thrift.js"></script>
+	<script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/datahub_types.js"></script>
+	<script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/DataHub.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script src="https://code.highcharts.com/highcharts.js"></script>
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <div id="container" style="min-width: 310px; max-width: 800px; height: 400px; margin: 0 auto"></div>
+  </body>
+</html>
+<script type="text/javascript">
+	transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
+	protocol = new Thrift.Protocol(transport),
+	client = new DataHubClient(protocol),
+	con_params = new ConnectionParams({'user': 'eweitest', 'password': 'eweitest'}),
+	con = client.open_connection(con_params),
+	res = client.execute_sql(con, 'select * from eweitest.repo1.data1'); 
+
+	console.log(res); 
+
+	$(document).ready(function(){
+	    var categories_arr = []; 
+	    var prices_arr = []; 
+	    $.each(res.tuples, function(tuple_idx, tuple) {
+	    	$.each(tuple.cells, function(cell_idx, cell) {
+	    		var val = parseFloat(cell);
+	    		if(isNaN(val)) {
+	    			categories_arr.push(cell);
+	    		}
+	    		else {
+	    			prices_arr.push(val); 
+	    		}
+	    	});
+	    }); 
+
+	$(function () {
+	    $('#container').highcharts({
+	        chart: {
+	            type: 'bar'
+	        },
+	        title: {
+	            text: 'A bar graph of my ' + res.field_names[0] + "s and " + res.field_names[1] +"s" 
+	        },
+	        xAxis: {
+	            categories: categories_arr,
+	            title: {
+	                text: "items"
+	            }
+	        },
+	        yAxis: {
+	            min: 0,
+	            title: {
+	                text: 'prices ($)',
+	                align: 'high'
+	            },
+	            labels: {
+	                overflow: 'justify'
+	            }
+	        },
+	        tooltip: {
+	            valuePrefix: '$'
+	        },
+	        plotOptions: {
+	            bar: {
+	                dataLabels: {
+	                    enabled: true
+	                }
+	            }
+	        },
+	        credits: {
+	            enabled: false
+	        },
+	        series: [{
+	            name: 'prices',
+	            data: prices_arr
+	        }]
+	    });
+	});
+	});
+	
+
+</script> 
+
