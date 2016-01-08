@@ -3,14 +3,27 @@
   <head>
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css' />
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/thrift/thrift.js"></script>
 	<script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/datahub_types.js"></script>
 	<script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/DataHub.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 	<script src="https://code.highcharts.com/highcharts.js"></script>
+	<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="http://code.highcharts.com/highcharts-more.js"></script>
   </head>
   <body>
     <h1><%= title %></h1>
+	<div class="btn-group">
+	  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+	    Choose a graph <span class="caret"></span>
+	  </button>
+	  <ul class="dropdown-menu">
+	    <li><a href="#" id="bar">Bar graph</a></li>
+	    <li><a href="#" id="line">Line graph</a></li>
+	    <li><a href="#" id="area">Area graph</a></li>
+	  </ul>
+	</div>
     <div id="container" style="min-width: 310px; max-width: 800px; height: 400px; margin: 0 auto"></div>
   </body>
 </html>
@@ -20,70 +33,182 @@
 	client = new DataHubClient(protocol),
 	con_params = new ConnectionParams({'user': 'eweitest', 'password': 'eweitest'}),
 	con = client.open_connection(con_params),
-	res = client.execute_sql(con, 'select * from eweitest.repo1.data1'); 
+	res = client.execute_sql(con, 'select * from eweitest.repo1.temperature'); 
 
 	console.log(res); 
 
 	$(document).ready(function(){
 	    var categories_arr = []; 
-	    var prices_arr = []; 
+	    var low_arr = []; 
+	    var high_arr = []; 
+	    var complete_arr = []; 
+	    var bar_arr = []; 
 	    $.each(res.tuples, function(tuple_idx, tuple) {
+	    	var t = []; 
+	    	var s = []; 
 	    	$.each(tuple.cells, function(cell_idx, cell) {
 	    		var val = parseFloat(cell);
-	    		if(isNaN(val)) {
+	    		if(cell_idx == 0) {
 	    			categories_arr.push(cell);
+	    			t.push(cell);
+	    		}
+	    		else if(cell_idx == 1) {
+	    			low_arr.push(val); 
+	    			t.push(val);
+	    			s.push(val);
 	    		}
 	    		else {
-	    			prices_arr.push(val); 
+	    			high_arr.push(val); 
+	    			t.push(val);
+	    			s.push(val); 
 	    		}
 	    	});
+	    	complete_arr.push(t); 
+	    	bar_arr.push(s); 
 	    }); 
 
-	$(function () {
-	    $('#container').highcharts({
-	        chart: {
-	            type: 'bar'
-	        },
-	        title: {
-	            text: 'A bar graph of my ' + res.field_names[0] + "s and " + res.field_names[1] +"s" 
-	        },
-	        xAxis: {
-	            categories: categories_arr,
-	            title: {
-	                text: "items"
-	            }
-	        },
-	        yAxis: {
-	            min: 0,
-	            title: {
-	                text: 'prices ($)',
-	                align: 'high'
-	            },
-	            labels: {
-	                overflow: 'justify'
-	            }
-	        },
-	        tooltip: {
-	            valuePrefix: '$'
-	        },
-	        plotOptions: {
-	            bar: {
-	                dataLabels: {
-	                    enabled: true
-	                }
-	            }
-	        },
-	        credits: {
-	            enabled: false
-	        },
-	        series: [{
-	            name: 'prices',
-	            data: prices_arr
-	        }]
-	    });
-	});
-	});
-	
+	    $("#line").click(function() {
+	    	$(function () {
+		    $('#container').highcharts({
+		        chart: {
+		            type: 'line'
+		        },
+		        title: {
+		            text: 'Monthly Temperatures - Highs and Lows'
+		        },
+		        subtitle: {
+		            text: '**A line graph**'
+		        },
+		        xAxis: {
+		            categories: categories_arr
+		        },
+		        yAxis: {
+		            title: {
+		                text: 'Temperature (°C)'
+		            }
+		        },
+		        plotOptions: {
+		            line: {
+		                dataLabels: {
+		                    enabled: true
+		                },
+		                enableMouseTracking: false
+		            }
+		        },
+		        series: [{
+		            name: 'low',
+		            data: low_arr
+		        }, {
+		            name: 'high',
+		            data: high_arr 
+		        }]
+		    });
+		});
+	    }); 
 
+	    $("#area").click(function() {
+			$(function () {
+		        $('#container').highcharts({
+		            chart: {
+		                type: 'arearange',
+		                zoomType: 'x'
+		            },
+
+		            title: {
+		                text: 'Monthly Temperatures - Highs and Lows'
+		            },
+		            subtitle: {
+		            	text: '**An area graph**'
+		       		},
+		            xAxis: {
+		                type: 'month',
+		                categories: categories_arr
+		            },
+
+		            yAxis: {
+		                title: {
+		                    text: 'Temperature (°C)'
+		                }
+		            },
+
+		            tooltip: {
+		                crosshairs: true,
+		                shared: true,
+		                valueSuffix: '°C'
+		            },
+
+		            legend: {
+		                enabled: false
+		            },
+
+		            series: [{
+		                name: 'Temperatures',
+		                data: complete_arr 
+		            }]
+
+		        });
+
+			});
+	    });
+
+	    $("#bar").click(function() {
+			$(function () {
+
+			    $('#container').highcharts({
+
+			        chart: {
+			            type: 'columnrange',
+			            inverted: true
+			        },
+
+			        title: {
+			            text: 'Monthly Temperatures - Highs and Lows'
+			        },
+
+			        subtitle: {
+			            text: '**a bar graph**'
+			        },
+
+			        xAxis: {
+			            categories: categories_arr
+			        },
+
+			        yAxis: {
+			            title: {
+			                text: 'Temperature ( °C )'
+			            }
+			        },
+
+			        tooltip: {
+			            valueSuffix: '°C'
+			        },
+
+			        plotOptions: {
+			            columnrange: {
+			                dataLabels: {
+			                    enabled: true,
+			                    formatter: function () {
+			                        return this.y + '°C';
+			                    }
+			                }
+			            }
+			        },
+
+			        legend: {
+			            enabled: false
+			        },
+
+			        series: [{
+			            name: 'Temperatures',
+			            data: bar_arr
+			        }]
+
+			    });
+
+			});
+	    });
+
+		
+	}); 
 </script> 
 
